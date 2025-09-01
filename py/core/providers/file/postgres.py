@@ -204,12 +204,15 @@ class PostgresFileProvider(FileProvider):
         async with self.connection_manager.pool.get_connection() as conn:  # type: ignore
             with ZipFile(zip_buffer, "w") as zip_file:
                 for record in results:
-                    file_content = await self._read_lobject(
-                        conn, record["oid"]
-                    )
-
-                    zip_file.writestr(record["name"], file_content)
-                    total_size += record["size"]
+                    try:
+                        file_content = await self._read_lobject(
+                            conn, record["oid"]
+                        )
+                        zip_file.writestr(record["name"], file_content)
+                        total_size += record["size"]
+                    except R2RException as e:
+                        logger.warning(f"Skipping file {record['name']} due to error: {e}")
+                        continue
 
         zip_buffer.seek(0)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -225,7 +228,7 @@ class PostgresFileProvider(FileProvider):
         async with conn.transaction():
             try:
                 lo_exists = await conn.fetchval(
-                    "SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_largeobject_metadata WHERE oid = $1);",
+                    "SELECT EXISTS(SELECT 1 FROM pg_largeobject WHERE loid = $1)",
                     oid,
                 )
                 if not lo_exists:
@@ -257,7 +260,9 @@ class PostgresFileProvider(FileProvider):
                     message=f"Failed to read large object {oid}",
                 ) from None
             finally:
-                await conn.execute("SELECT lo_close($1)", lobject)
+                # Only attempt to close if we successfully opened it
+                if 'lobject' in locals() and lobject is not None:
+                    await conn.execute("SELECT lo_close($1)", lobject)
 
         return file_data.getvalue()
 
@@ -269,16 +274,29 @@ class PostgresFileProvider(FileProvider):
         """
 
         async with self.connection_manager.pool.get_connection() as conn:  # type: ignore
+            # First, get the oid of the large object
+            oid = await conn.fetchval(query, document_id)
+            if not oid:
+                raise R2RException(
+                    status_code=404,
+                    message=f"File for document {document_id} not found",
+                )
+
+            # Try to delete the large object in a separate transaction
+            # This way, if it fails, it won't affect our ability to delete the file record
+            try:
+                # Use a separate transaction just for the lo_unlink operation
+                async with conn.transaction():
+                    try:
+                        await conn.execute("SELECT lo_unlink($1)", oid)
+                    except asyncpg.exceptions.UndefinedObjectError:
+                        logger.warning(f"Large object metadata with OID {oid} does not exist, skipping deletion")
+            except Exception as e:
+                # If any other exception occurs during lobject deletion, log it but continue
+                logger.error(f"Error deleting large object with OID {oid}: {e}")
+
+            # Now delete the file record in a separate transaction
             async with conn.transaction():
-                oid = await conn.fetchval(query, document_id)
-                if not oid:
-                    raise R2RException(
-                        status_code=404,
-                        message=f"File for document {document_id} not found",
-                    )
-
-                await self._delete_lobject(conn, oid)
-
                 delete_query = f"""
                 DELETE FROM {self._get_table_name(self.table_name)}
                 WHERE document_id = $1
@@ -286,10 +304,6 @@ class PostgresFileProvider(FileProvider):
                 await conn.execute(delete_query, document_id)
 
         return True
-
-    async def _delete_lobject(self, conn, oid: int) -> None:
-        """Delete a large object."""
-        await conn.execute("SELECT lo_unlink($1)", oid)
 
     async def get_files_overview(
         self,
