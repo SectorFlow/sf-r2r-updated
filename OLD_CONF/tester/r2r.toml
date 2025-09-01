@@ -1,0 +1,206 @@
+[app]
+default_max_documents_per_user = 100_000_000
+default_max_chunks_per_user = 100_000_000
+default_max_collections_per_user = 100_000_000
+
+[agent]
+system_instruction_name = "rag_agent"
+# tool_names = ["local_search", "web_search"] # uncomment to enable web search
+tool_names = ["local_search"]
+
+  [agent.generation_config]
+  model = "openai/gpt-4o"
+  api_base = "https://platform.sectorflow.ai/lllm/v1"
+  stream = false
+  add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://platform.sectorflow.ai/lllm/v1"}
+
+
+[auth]
+provider = "r2r"
+access_token_lifetime_in_minutes = 60
+refresh_token_lifetime_in_days = 7
+require_authentication = true
+require_email_verification = false
+default_admin_email = "admin@sf-rag-enhanced.sectorflow.ai"
+default_admin_password = "change_me_immediately"
+
+[email]
+provider = "console_mock"
+
+[completion]
+provider = "litellm"
+concurrent_request_limit = 32
+custom_llm_provider = "custom_openai"
+request_timeout = 800
+max_retries = 1
+initial_backoff = 30.0
+max_backoff = 120.0
+timeout = 800
+stream_timeout = 800
+
+  [completion.generation_config]
+  model = "openai/gpt-4o"
+  temperature = 0.1
+  top_p = 1
+  max_tokens_to_sample = 4_095
+  api_base = "https://platform.sectorflow.ai/lllm/v1"
+  stream = false
+  timeout = 800
+  stream_timeout = 800
+  add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://platform.sectorflow.ai/lllm/v1", timeout = 800, stream_timeout = 800}
+
+
+[crypto]
+provider = "bcrypt"
+
+[embedding]
+provider = "litellm"
+base_model = "xinference/sectorflow-embedding-model"
+base_dimension = 1024
+batch_size = 256
+add_title_as_prefix = false
+custom_llm_provider = "xinference"
+
+rerank_model = "huggingface/mixedbread-ai/mxbai-rerank-large-v1"
+rerank_url = "https://platform.sectorflow.ai/lllm/v1/rerank"
+
+concurrent_request_limit = 192
+# quantization_settings = { quantization_type = "FP32" }
+
+api_base = "http://localhost:4000/v1"
+
+    [embedding.generation_config]
+    model = "xinference/sectorflow-embedding-model"
+    api_base = "http://localhost:4000/v1"
+    custom_llm_provider = "xinference"
+    stream = false
+    add_generation_kwargs = {custom_llm_provider = "xinference", api_base = "http://localhost:4000/v1"}
+
+[file]
+provider = "postgres"
+
+[ingestion]
+provider = "unstructured_local"
+chunking_strategy = "basic"
+chunk_size = 512
+chunk_overlap = 256
+
+combine_under_n_chars = 128
+max_characters = 500
+new_after_n_chars = 1500
+overlap = 250
+split_pdf_page = true
+split_pdf_allow_failed = true
+split_pdf_concurrency_level = 8
+
+excluded_parsers = ["mp4"]
+
+skip_document_summary = true
+document_summary_system_prompt = 'default_system'
+document_summary_task_prompt = 'default_summary'
+chunks_for_document_summary = 128
+document_summary_model = "gpt-4.1-mini"
+
+model = "openai/gpt-4o"
+api_base = "https://platform.sectorflow.ai/lllm/v1"
+custom_llm_provider = "custom_openai"
+
+vision_img_model = "openai/gpt-4.1-mini"
+vision_pdf_model = "openai/gpt-4.1-mini"
+parser_overrides = {pdf = "zerox"}
+
+  [ingestion.extra_parsers]
+    pdf = "zerox"
+
+  [ingestion.chunk_enrichment_settings]
+    enable_chunk_enrichment = false
+    strategies = ["semantic", "neighborhood"]
+    forward_chunks = 2            # Look ahead 2 chunks
+    backward_chunks = 2           # Look behind 2 chunks
+    semantic_neighbors = 3        # Find 3 semantically similar chunks
+    semantic_similarity_threshold = 0.7  # Minimum similarity score
+    generation_config = {model = "openai/gpt-4.1-mini", api_base = "https://platform.sectorflow.ai/lllm/v1", stream = false, add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://lllm.sectorflow.ai/v1"}, timeout = 800, stream_timeout = 800}
+
+[database]
+provider = "postgres"
+default_collection_name = "GlobalDefaultCollection"
+default_collection_description = "The Global Default Collection"
+batch_size = 512
+
+  [database.graph_creation_settings]
+    clustering_mode = "local"
+    graph_entity_description_prompt = "graphrag_entity_description"
+    # graphrag_relationships_extraction_few_shot = "graphrag_relationships_extraction_few_shot"
+    entity_types = [] # if empty, all entities are extracted
+    relation_types = [] # if empty, all relations are extracted
+    fragment_merge_count = 4 # number of fragments to merge into a single extraction
+    max_knowledge_relationships = 25
+    max_description_input_length = 65536
+    # task_prompt_override = "nope"
+    generation_config = {model = "openai/gpt-4.1-mini", api_base = "https://platform.sectorflow.ai/lllm/v1", stream = false, add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://lllm.sectorflow.ai/v1"}}
+
+  [database.graph_enrichment_settings]
+    community_reports_prompt = "graphrag_communities"
+    graphrag_communities = "graphrag_communities"
+    graphrag_communities_prompt = "graphrag_communities"
+    # force_kg_enrichment = false
+    max_summary_input_length = 65536
+    generation_config = {model = "openai/gpt-4.1-mini", api_base = "https://platform.sectorflow.ai/lllm/v1", stream = false, add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://lllm.sectorflow.ai/v1"}}
+    # leiden_params = {}
+
+  [database.graph_search_settings]
+    generation_config = {model = "openai/gpt-4.1-mini", api_base = "https://platform.sectorflow.ai/lllm/v1", stream = false, add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://lllm.sectorflow.ai/v1"}}
+
+  [database.limits]
+    # Default fallback limits if no route or user-level overrides are found
+    global_per_min = 150_000_000
+    monthly_limit = 150_000_000
+
+  [database.route_limits]
+    # Set the `v3/retrieval/search` route to have a maximum of 5 requests per minute
+    "/v3/retrieval/search" = { route_per_min = 150_000_000 }
+    "/v3/retrieval/rag" = { route_per_min = 150_000_000 }
+    "/v3/documents" =  { route_per_min = 150_000_000 }
+
+[search_settings]
+  use_semantic_search = true
+  use_fulltext_search = false
+  use_hybrid_search = false
+  filters = {}
+  limit = 20
+  offset = 0
+  search_strategy = "vanilla"
+
+  [search_settings.hybrid_settings]
+    full_text_weight = 1.0
+    semantic_weight = 5.0
+    full_text_limit = 200
+    rrf_k = 50
+
+  [search_settings.chunk_settings]
+    enabled = true
+    index_measure = "cosine_distance"
+    include_metadata = true
+    probes = 25
+    limit = 10
+    ef_search = 100
+
+  [search_settings.graph_settings]
+    enabled = false
+    kg_search_type = "local"
+    max_community_description_length = 65536
+    max_llm_queries_for_global_search = 25
+    limits = {entity = 20, relationship = 20, community = 20}
+    generation_config = {model = "openai/gpt-4.1-mini", api_base = "https://platform.sectorflow.ai/lllm/v1", stream = false, add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://lllm.sectorflow.ai/v1"}}
+
+
+[logging]
+provider = "local"
+log_table = "logs"
+log_info_table = "log_info"
+
+[orchestration]
+provider = "hatchet"
+
+[prompt]
+provider = "r2r"

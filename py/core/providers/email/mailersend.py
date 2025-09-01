@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Optional
 
-from mailersend import emails
+from mailersend.emails import NewEmail
 
 from core.base import EmailConfig, EmailProvider
 
@@ -42,7 +42,7 @@ class MailerSendEmailProvider(EmailProvider):
             config.password_changed_template_id
             or os.getenv("MAILERSEND_PASSWORD_CHANGED_TEMPLATE_ID")
         )
-        self.client = emails.NewEmail(self.api_key)
+        self.client = NewEmail(self.api_key)
         self.sender_name = config.sender_name or "R2R"
 
         # Logo and documentation URLs

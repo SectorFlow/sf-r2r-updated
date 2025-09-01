@@ -1,0 +1,103 @@
+[app]
+default_max_documents_per_user = 10_000  # Our applied change - increased from 100 to 10k
+default_max_chunks_per_user = 100_000_000  # Our applied change - increased from 1M to 100M
+default_max_collections_per_user = 1_000  # Our applied change - increased from 100 to 1k
+
+[agent]
+system_instruction_name = "rag_agent"
+tool_names = ["local_search"]
+
+  [agent.generation_config]
+  model = "openai/gpt-4o"
+  api_base = "https://platform.sectorflow.ai/lllm/v1"
+  stream = false
+  add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://platform.sectorflow.ai/lllm/v1"}
+
+[auth]
+provider = "r2r"
+access_token_lifetime_in_minutes = 60
+refresh_token_lifetime_in_days = 7
+require_authentication = true
+require_email_verification = false
+default_admin_email = "admin@test.local"
+default_admin_password = "test_password_123"
+
+[email]
+provider = "console_mock"
+
+[completion]
+provider = "litellm"
+concurrent_request_limit = 16
+
+  [completion.generation_config]
+  model = "openai/gpt-4o"
+  api_base = "https://platform.sectorflow.ai/lllm/v1"
+  request_timeout = 800.0  # Our applied change - increased timeout to 800 seconds
+  add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://platform.sectorflow.ai/lllm/v1"}
+
+[crypto]
+provider = "bcrypt"
+
+[database]
+provider = "postgres"
+
+  [database.postgres_configuration_settings]
+  host = "172.21.0.5"  # Local postgres container IP
+  port = 7556
+  dbname = "r2r_test"
+  user = "postgres"
+  password = "postgres"
+  connection_timeout = 120  # Our applied change - increased connection timeout
+  max_connections = 50
+  statement_cache_size = 100
+
+[embedding]
+provider = "openai"
+base_model = "text-embedding-3-large"
+base_dimension = 3072
+
+  [embedding.generation_config]
+  api_base = "https://platform.sectorflow.ai/lllm/v1"
+  add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://platform.sectorflow.ai/lllm/v1"}
+
+[file]
+provider = "postgres"
+
+[ingestion]
+provider = "r2r"
+excluded_parsers = ["gif", "jpeg", "jpg", "png", "bmp", "tiff", "webp"]
+
+[kg]
+provider = "postgres"
+batch_size = 1
+
+  [kg.kg_extraction_config]
+  model = "openai/gpt-4o"
+  api_base = "https://platform.sectorflow.ai/lllm/v1"
+  add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://platform.sectorflow.ai/lllm/v1"}
+
+  [kg.kg_enrichment_config]
+  model = "openai/gpt-4o"
+  api_base = "https://platform.sectorflow.ai/lllm/v1"
+  max_knowledge_triples = 100
+  generation_config = { add_generation_kwargs = {custom_llm_provider = "custom_openai", api_base = "https://platform.sectorflow.ai/lllm/v1"} }
+
+[logging]
+provider = "local"
+log_table = "logs"
+log_info_table = "log_info"
+
+[orchestration]
+provider = "hatchet"
+
+  [orchestration.config]
+  host = "172.21.0.18"
+  port = 9078
+  tls_config = "none"
+  namespace = "r2r_test"
+
+[parsing]
+provider = "r2r"
+
+[prompt]
+provider = "r2r"
