@@ -32,9 +32,9 @@ class InnerConfig(BaseModel, ABC):
 class AppConfig(InnerConfig):
     project_name: Optional[str] = None
     user_tools_path: Optional[str] = None
-    default_max_documents_per_user: Optional[int] = 100
-    default_max_chunks_per_user: Optional[int] = 10_000
-    default_max_collections_per_user: Optional[int] = 5
+    default_max_documents_per_user: Optional[int] = 10_000
+    default_max_chunks_per_user: Optional[int] = 100_000_000
+    default_max_collections_per_user: Optional[int] = 1_000
     default_max_upload_size: int = 2_000_000  # e.g. ~2 MB
     quality_llm: Optional[str] = None
     fast_llm: Optional[str] = None

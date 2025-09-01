@@ -26,7 +26,7 @@ class CompletionConfig(ProviderConfig):
     max_retries: int = 3
     initial_backoff: float = 1.0
     max_backoff: float = 64.0
-    request_timeout: float = 15.0
+    request_timeout: float = 800.0
 
     def validate_config(self) -> None:
         if not self.provider:

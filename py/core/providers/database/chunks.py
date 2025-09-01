@@ -178,6 +178,7 @@ class PostgresChunksHandler(Handler):
         CREATE INDEX IF NOT EXISTS idx_vectors_owner_id ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} (owner_id);
         CREATE INDEX IF NOT EXISTS idx_vectors_collection_ids ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} USING GIN (collection_ids);
         CREATE INDEX IF NOT EXISTS idx_vectors_text ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} USING GIN (to_tsvector('english', text));
+        CREATE INDEX IF NOT EXISTS idx_vectors_vec_hnsw ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} USING hnsw (vec vector_cosine_ops);
         """
 
         await self.connection_manager.execute_query(query)

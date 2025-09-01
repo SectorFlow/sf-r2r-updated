@@ -30,6 +30,7 @@ class SemaphoreConnectionPool:
                 self.connection_string,
                 max_size=self.postgres_configuration_settings.max_connections,
                 statement_cache_size=self.postgres_configuration_settings.statement_cache_size,
+                connect_timeout=120,
             )
 
             logger.info(
